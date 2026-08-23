@@ -1,0 +1,776 @@
+openapi: 3.0.0
+info:
+  title: Simple Booking API
+  version: 1.0.0
+  description: |-
+    «Запись на звонок» — упрощённый сервис бронирования встреч по мотивам Cal.com.
+
+    Роли:
+    - Владелец календаря: один заранее заданный профиль, без регистрации и входа.
+    Эндпоинты /api/owner — админская часть, работают от его имени.
+    - Гость: без аккаунта, работает только с /api/public.
+
+    Инварианты (обязательны для бэкенда):
+    I1. Два бронирования не могут пересекаться по времени, даже если относятся
+    к разным типам событий. Календарь у владельца один.
+    I2. Окно записи — 14 дней, начиная с текущего момента (BOOKING_WINDOW_DAYS).
+    Слот в прошлом или за границей окна недоступен для записи.
+    I3. Длительность бронирования всегда равна durationMinutes своего типа события.
+    Гость передаёт только start, end вычисляет сервер.
+    I4. Сетка слотов строится с шагом, равным durationMinutes типа события,
+    от начала рабочего дня владельца. Поэтому у типа «15 минут» и типа
+    «30 минут» сетки разные, а занятость — общая (см. I1).
+    I5. Слот со статусом busy виден гостю, но не раскрывает, кто и на какой
+    тип события его занял.
+
+    Все моменты времени в API — UTC (ISO 8601). Даты календаря (plainDate) и
+    рабочие часы (plainTime) трактуются в таймзоне владельца.
+tags:
+  - name: Owner
+  - name: Public
+paths:
+  /api/owner/bookings:
+    get:
+      operationId: OwnerBookings_list
+      description: |-
+        Страница предстоящих встреч: единый список бронирований по всем типам
+        событий, отсортированный по start по возрастанию.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Нижняя граница выборки, UTC. По умолчанию — текущий момент.
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: to
+          in: query
+          required: false
+          description: Верхняя граница выборки, UTC. По умолчанию — без ограничения.
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: eventTypeId
+          in: query
+          required: false
+          description: Фильтр по типу события. По умолчанию — все типы.
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+      tags:
+        - Owner
+  /api/owner/bookings/{id}:
+    get:
+      operationId: OwnerBookings_get
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Owner
+    delete:
+      operationId: OwnerBookings_cancel
+      description: Отмена встречи владельцем освобождает слот.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Owner
+  /api/owner/event-types:
+    get:
+      operationId: OwnerEventTypes_list
+      description: Все типы событий владельца.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+      tags:
+        - Owner
+    post:
+      operationId: OwnerEventTypes_create
+      description: Создать тип события. id задаёт владелец, он должен быть уникальным.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '422':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeCreate'
+  /api/owner/event-types/{id}:
+    get:
+      operationId: OwnerEventTypes_get
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Owner
+    patch:
+      operationId: OwnerEventTypes_update
+      description: Изменение durationMinutes не пересчитывает уже созданные бронирования.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeUpdate'
+    delete:
+      operationId: OwnerEventTypes_delete
+      description: |-
+        Удаление типа события не удаляет уже созданные бронирования:
+        они остаются в списке встреч с сохранённым eventTypeTitle.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Owner
+  /api/owner/profile:
+    get:
+      operationId: OwnerProfile_get
+      description: Профиль владельца, используемый админкой по умолчанию.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+      tags:
+        - Owner
+  /api/public/bookings:
+    post:
+      operationId: PublicBookings_create
+      description: |-
+        Создать бронирование на выбранный слот.
+        409 slot_taken — если время успели занять, пока гость заполнял форму.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '422':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+  /api/public/bookings/{id}:
+    get:
+      operationId: PublicBookings_get
+      description: 'Экран подтверждения: гость открывает бронирование по ссылке с id.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Public
+  /api/public/event-types:
+    get:
+      operationId: PublicEventTypes_list
+      description: 'Каталог: карточки «Выберите тип события».'
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicEventType'
+      tags:
+        - Public
+  /api/public/event-types/{id}:
+    get:
+      operationId: PublicEventTypes_get
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicEventType'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Public
+  /api/public/event-types/{id}/availability:
+    get:
+      operationId: PublicEventTypes_availability
+      description: |-
+        Доступность по дням на всё окно записи — данные для месячной сетки
+        календаря с подписями «сколько свободно».
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityCalendar'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      tags:
+        - Public
+  /api/public/event-types/{id}/slots:
+    get:
+      operationId: PublicEventTypes_slots
+      description: |-
+        Сетка слотов конкретного дня со статусами free/busy —
+        панель «Статус слотов» справа от календаря.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          description: 'Дата в таймзоне владельца. Обязательна: слоты запрашиваются по дню.'
+          schema:
+            type: string
+            format: date
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DaySlots'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '422':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      tags:
+        - Public
+  /api/public/owner:
+    get:
+      operationId: PublicOwner_get
+      description: Публичный профиль владельца для шапки каталога и страницы бронирования.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Owner'
+      tags:
+        - Public
+components:
+  schemas:
+    AvailabilityCalendar:
+      type: object
+      required:
+        - eventTypeId
+        - timeZone
+        - windowStart
+        - windowEnd
+        - days
+      properties:
+        eventTypeId:
+          type: string
+        timeZone:
+          type: string
+        windowStart:
+          type: string
+          format: date
+          description: Первый день окна записи (сегодня в таймзоне владельца).
+        windowEnd:
+          type: string
+          format: date
+          description: 'Последний день окна: windowStart + 14 дней.'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayAvailability'
+          description: Дни окна по возрастанию. Дни вне окна в ответ не попадают.
+      description: Календарь доступности на окно записи — данные для месячной сетки.
+    Booking:
+      type: object
+      required:
+        - id
+        - eventTypeId
+        - eventTypeTitle
+        - start
+        - end
+        - guest
+        - createdAt
+      properties:
+        id:
+          type: string
+        eventTypeId:
+          type: string
+        eventTypeTitle:
+          type: string
+          description: |-
+            Название типа события на момент бронирования — чтобы список встреч
+            владельца читался без дополнительных запросов и не ломался,
+            если тип события переименовали или удалили.
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        guest:
+          $ref: '#/components/schemas/Guest'
+        createdAt:
+          type: string
+          format: date-time
+      description: Созданное бронирование.
+    BookingCreate:
+      type: object
+      required:
+        - eventTypeId
+        - start
+        - guest
+      properties:
+        eventTypeId:
+          type: string
+        start:
+          type: string
+          format: date-time
+          description: Начало выбранного слота, UTC. Должно совпадать со слотом сетки в статусе free.
+        guest:
+          $ref: '#/components/schemas/Guest'
+      description: 'Запрос на бронирование. end не передаётся: выводится из типа события.'
+    ConflictError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - slot_taken
+            - event_type_already_exists
+        message:
+          type: string
+    DayAvailability:
+      type: object
+      required:
+        - date
+        - freeSlots
+        - totalSlots
+        - isBookable
+      properties:
+        date:
+          type: string
+          format: date
+        freeSlots:
+          type: integer
+          format: int32
+          description: Сколько слотов дня свободно.
+        totalSlots:
+          type: integer
+          format: int32
+          description: Сколько слотов в сетке дня всего.
+        isBookable:
+          type: boolean
+          description: |-
+            false, если день вне окна записи или свободных слотов нет —
+            фронтенд делает такой день некликабельным.
+      description: Сводка по одному дню месяца — для подписей вида «36 св.» в календаре.
+    DaySlots:
+      type: object
+      required:
+        - eventTypeId
+        - date
+        - timeZone
+        - slots
+      properties:
+        eventTypeId:
+          type: string
+        date:
+          type: string
+          format: date
+          description: Запрошенная дата в таймзоне владельца.
+        timeZone:
+          type: string
+          description: Таймзона, в которой фронтенд форматирует время.
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+          description: Все слоты дня по возрастанию start. Пустой массив — выходной или день вне окна.
+      description: |-
+        Сетка слотов за один день — панель «Статус слотов».
+        Возвращаются и свободные, и занятые слоты, чтобы гость видел загруженность дня.
+    EventType:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          description: Человекочитаемый идентификатор-слаг, задаёт владелец.
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 5
+          maximum: 480
+          description: Длительность встречи в минутах. Она же — шаг сетки слотов.
+      description: Тип события — шаблон встречи, которую можно забронировать.
+    EventTypeCreate:
+      type: object
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+          default: ''
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 5
+          maximum: 480
+          default: 30
+      description: Данные для создания типа события.
+    EventTypeUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+        durationMinutes:
+          type: integer
+          format: int32
+          minimum: 5
+          maximum: 480
+      description: Частичное обновление типа события. id неизменяем.
+    Guest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        notes:
+          type: string
+          maxLength: 1000
+          description: Дополнительные заметки к встрече.
+      description: Контактные данные гостя.
+    NotFoundError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - event_type_not_found
+            - booking_not_found
+        message:
+          type: string
+    Owner:
+      type: object
+      required:
+        - name
+        - timeZone
+        - workdayStart
+        - workdayEnd
+      properties:
+        name:
+          type: string
+          description: Отображаемое имя в шапке страницы бронирования.
+        bio:
+          type: string
+          description: Короткое описание/приветствие для гостя.
+        avatarUrl:
+          type: string
+          format: uri
+          description: URL аватара. Если пусто — фронтенд рисует плейсхолдер.
+        timeZone:
+          type: string
+          description: Таймзона владельца в формате IANA, например "Europe/Berlin".
+        workdayStart:
+          type: string
+          format: time
+          description: Начало рабочего дня в таймзоне владельца.
+        workdayEnd:
+          type: string
+          format: time
+          description: Конец рабочего дня в таймзоне владельца.
+      description: Профиль владельца календаря. Единственный, создаётся при инициализации.
+    PublicEventType:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - durationMinutes
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+      description: 'Публичное представление типа события: карточка в каталоге.'
+    Slot:
+      type: object
+      required:
+        - start
+        - end
+        - status
+      properties:
+        start:
+          type: string
+          format: date-time
+          description: Начало слота, UTC.
+        end:
+          type: string
+          format: date-time
+          description: Конец слота, UTC. start + durationMinutes типа события.
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+      description: Интервал сетки конкретного дня.
+    SlotStatus:
+      type: string
+      enum:
+        - free
+        - busy
+      description: Статус слота в сетке.
+    ValidationError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_payload
+            - slot_not_on_grid
+            - slot_outside_window
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
