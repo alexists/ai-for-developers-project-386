@@ -1,0 +1,42 @@
+{
+  "name": "simple-booking-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "gen:api": "openapi-typescript ../api/openapi/openapi.yaml -o src/api/schema.d.ts",
+    "dev": "vite",
+    "build": "npm run gen:api && tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "mock": "prism mock ../api/openapi/openapi.yaml -p 4010 --dynamic"
+  },
+  "dependencies": {
+    "@mantine/core": "^9.5.2",
+    "@mantine/dates": "^9.5.2",
+    "@mantine/form": "^9.5.2",
+    "@mantine/hooks": "^9.5.2",
+    "@mantine/notifications": "^9.5.2",
+    "@tabler/icons-react": "^3.46.0",
+    "dayjs": "^1.11.23",
+    "openapi-fetch": "^0.17.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.16.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "openapi-typescript": "^7.13.0",
+    "oxlint": "^1.75.0",
+    "postcss": "^8.5.26",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
+    "typescript": "~5.9.0",
+    "vite": "^8.2.0"
+  },
+  "description": "Фронтенд «Запись на звонок» — реализация по контракту api/openapi/openapi.yaml"
+}
