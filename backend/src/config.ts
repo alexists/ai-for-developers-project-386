@@ -14,9 +14,15 @@ function fromEnv(name: string, fallback: string): string {
   return value === undefined || value === '' ? fallback : value;
 }
 
+/** База в памяти: данные живут до перезапуска процесса. */
+export const IN_MEMORY_DB = ':memory:';
+
 /** Относительный путь трактуется от корня пакета, абсолютный — как есть. */
 function pathFromEnv(name: string, fallback: string): string {
-  return resolve(packageRoot, fromEnv(name, fallback));
+  const value = fromEnv(name, fallback);
+
+  // :memory: — не путь, а указание SQLite держать базу в памяти.
+  return value === IN_MEMORY_DB ? value : resolve(packageRoot, value);
 }
 
 export const config = {

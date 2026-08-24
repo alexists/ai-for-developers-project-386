@@ -5,6 +5,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { IN_MEMORY_DB } from '../config.js';
 import { EVENT_TYPES_SEED, OWNER_SEED, SCHEMA_SQL } from './schema.js';
 
 export type Database = DatabaseSync;
@@ -43,7 +44,7 @@ function seed(db: Database): void {
 }
 
 export function openDatabase(path: string): Database {
-  if (path !== ':memory:') {
+  if (path !== IN_MEMORY_DB) {
     mkdirSync(dirname(path), { recursive: true });
   }
 
