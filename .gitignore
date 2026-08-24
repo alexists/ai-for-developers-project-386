@@ -3,3 +3,6 @@ dist/
 .env
 .env.local
 .vite/
+
+# Артефакты Playwright MCP
+.playwright-mcp/

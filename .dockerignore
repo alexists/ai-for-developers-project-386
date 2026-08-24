@@ -1,0 +1,11 @@
+.git
+.github
+**/node_modules
+**/dist
+backend/data
+**/.env
+**/.env.local
+.playwright-mcp
+*.png
+*.md
+!api/openapi/openapi.yaml
