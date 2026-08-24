@@ -33,3 +33,32 @@ Design First. `api/main.tsp` — единственный источник пр�
 ```bash
 cd api && npx tsp compile .     # сгенерировать OpenAPI
 ```
+
+## Формат коммитов
+
+[Conventional Commits](https://www.conventionalcommits.org/ru/v1.0.0/). По ним
+release-please собирает CHANGELOG и считает следующую версию, поэтому формат
+обязателен — в том числе для коммитов, которые делает агент.
+
+```
+<тип>(<область>): что сделано
+
+<тело: зачем, если из заголовка не очевидно>
+```
+
+Типы: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`.
+Области: `api`, `backend`, `frontend`, `e2e`, `docker`, `ci`.
+
+- `feat` поднимает минорную версию, `fix` — патч; остальные типы версию не двигают.
+- Ломающее изменение API — `!` после типа и абзац `BREAKING CHANGE:` в теле.
+- Заголовок — в повелительном наклонении, до 72 символов, без точки в конце.
+- Правка `main.tsp` вместе с пересобранным `openapi.yaml` — это `feat(api):`
+  или `fix(api):`, смотря что поменялось в поведении.
+
+## Проверки перед коммитом
+
+```bash
+cd backend  && npm run build && npm run lint && npm test
+cd frontend && npm run lint && npm run build
+cd e2e      && npm run build:app && npm test
+```

@@ -16,6 +16,7 @@
 api/          контракт: main.tsp -> openapi/openapi.yaml
 frontend/     интерфейс: Vite + React + Mantine
 backend/      сервер: Fastify + SQLite
+e2e/          интеграционные сценарии в браузере: Playwright
 Dockerfile    сборка всего приложения в один образ
 domain.md     доменная модель и сценарии
 coverage.md   покрытие сценариев задания эндпоинтами
@@ -67,6 +68,31 @@ npm run mock             # при необходимости — мок Prism п
 
 Подробности — в [frontend/README.md](frontend/README.md).
 
+### Интеграционные сценарии
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+npm run build:app        # собрать бэкенд и фронтенд
+npm test                 # 6 сценариев в настоящем браузере
+```
+
+Сценарии гоняются по собранному приложению — в той же связке, что и в Docker.
+Список проверяемых путей — в [e2e/README.md](e2e/README.md).
+
+## Проверки и релизы
+
+Каждый push и pull request проходят через GitHub Actions
+([ci.yml](.github/workflows/ci.yml)): пересборка контракта из `main.tsp` без
+расхождений, сборка и тесты бэкенда, сборка фронтенда, интеграционные сценарии
+в браузере и проверка, что Docker-образ поднимается и отвечает.
+
+Коммиты — по [Conventional Commits](https://www.conventionalcommits.org/ru/v1.0.0/),
+формат описан в [CLAUDE.md](CLAUDE.md). По ним
+[release-please](.github/workflows/release-please.yml) держит открытым release-PR
+с changelog и следующей версией; мёрдж этого PR выпускает релиз и ставит тег.
+
 ## Статус
 
 | Часть | Состояние |
@@ -75,3 +101,5 @@ npm run mock             # при необходимости — мок Prism п
 | Фронтенд | готов: 6 экранов, все операции контракта задействованы |
 | Бэкенд | готов: все 12 эндпоинтов, инварианты I1–I5, 39 тестов |
 | Docker-образ | готов: один образ, Node отдаёт API и статику |
+| Интеграционные тесты | готовы: 6 сценариев Playwright, основной путь бронирования |
+| CI и релизы | готовы: GitHub Actions на каждый push, release-please с changelog |
