@@ -83,6 +83,11 @@ jobs:
         with:
           node-version: '26'
           cache: npm
+          # В корне репозитория package-lock.json нет: пакеты лежат по папкам.
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            e2e/package-lock.json
 
       - name: Установить зависимости
         run: |
