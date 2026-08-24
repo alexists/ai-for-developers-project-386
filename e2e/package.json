@@ -1,0 +1,19 @@
+{
+  "name": "simple-booking-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Интеграционные сценарии «Запись на звонок» в реальном браузере",
+  "scripts": {
+    "build:app": "npm --prefix ../backend run build && npm --prefix ../frontend run build",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "typescript": "~5.9.0"
+  }
+}
