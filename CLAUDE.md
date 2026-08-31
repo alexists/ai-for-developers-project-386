@@ -63,6 +63,12 @@ release-please собирает CHANGELOG и считает следующую �
 
 Формат проверяется в CI (job «Формат коммитов» в `ci.yml`) на каждом pull request.
 
+В changelog попадают все типы, включая `ci` и `chore`: флаг `hidden` в
+`release-please-config.json` ничего не скрывает, потому что его применяет
+`filterCommits`, а тот вызывается только стратегиями `node`, `python` и
+`java-yoshi-mono-repo`. У нас `release-type: simple`. Поэтому у каждого типа
+должно быть имя раздела — иначе release-please выведет сырое `ci`.
+
 ## Проверки перед коммитом
 
 ```bash
