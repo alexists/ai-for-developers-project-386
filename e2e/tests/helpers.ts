@@ -91,3 +91,55 @@ export async function bookSlot(
 
   return { day, time };
 }
+
+export interface EventTypeDraft {
+  /** Слаг: попадает в адрес /book/{id}. */
+  id: string;
+  title: string;
+  description: string;
+  durationMinutes: number;
+}
+
+/** Карточка типа встречи в админке. */
+export const adminEventTypeCard = (page: Page, title: string) =>
+  page.locator('[data-testid="event-type-row"]', { hasText: title });
+
+/** Заполняет форму типа встречи в админке и сохраняет её. */
+async function submitEventTypeForm(
+  page: Page,
+  values: Omit<EventTypeDraft, 'id'> & { id?: string },
+): Promise<void> {
+  // При редактировании поле идентификатора выключено — контракт менять id не даёт.
+  if (values.id !== undefined) {
+    await page.getByLabel('Идентификатор').fill(values.id);
+  }
+
+  await page.getByLabel('Название').fill(values.title);
+  await page.getByLabel('Описание').fill(values.description);
+  await page.getByLabel('Длительность, минут').fill(String(values.durationMinutes));
+  await page.getByRole('button', { name: 'Сохранить' }).click();
+}
+
+/** Создаёт тип встречи из админки. */
+export async function createEventType(page: Page, draft: EventTypeDraft): Promise<void> {
+  await page.goto('/admin/event-types');
+  await page.getByRole('button', { name: 'Создать тип' }).click();
+
+  await submitEventTypeForm(page, draft);
+  await expect(adminEventTypeCard(page, draft.title)).toBeVisible();
+}
+
+/** Меняет поля существующего типа встречи; идентификатор остаётся прежним. */
+export async function editEventType(
+  page: Page,
+  title: string,
+  values: Omit<EventTypeDraft, 'id'>,
+): Promise<void> {
+  await page.goto('/admin/event-types');
+
+  // В карточке две кнопки-иконки: первая — редактирование, вторая — удаление.
+  await adminEventTypeCard(page, title).getByRole('button').first().click();
+
+  await submitEventTypeForm(page, values);
+  await expect(adminEventTypeCard(page, values.title)).toBeVisible();
+}

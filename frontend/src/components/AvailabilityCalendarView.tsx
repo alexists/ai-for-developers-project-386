@@ -16,6 +16,11 @@ interface Props {
 export function AvailabilityCalendarView({ availability, value, onChange }: Props) {
   const byDate = new Map(availability.days.map((day) => [day.date, day]));
 
+  // Окно записи начинается сегодня, а сегодняшний рабочий день может уже
+  // кончиться. Открываем календарь на первом дне, куда реально можно
+  // записаться: иначе в последний день месяца гость видит пустую сетку.
+  const firstBookable = availability.days.find((day) => day.isBookable)?.date;
+
   return (
     <DatePicker
       value={value}
@@ -23,7 +28,7 @@ export function AvailabilityCalendarView({ availability, value, onChange }: Prop
       // Дни за пределами окна записи в ответе отсутствуют — их не показываем.
       minDate={availability.windowStart}
       maxDate={availability.windowEnd}
-      defaultDate={availability.windowStart}
+      defaultDate={firstBookable ?? availability.windowStart}
       hideOutsideDates
       size="md"
       excludeDate={(date) => !byDate.get(date)?.isBookable}
