@@ -1,0 +1,14 @@
+# Блюпринт Render: приложение целиком — один Docker-сервис.
+# Порт Render подставляет через переменную PORT, приложение читает её из
+# окружения; в Dockerfile тот же PORT задан со значением по умолчанию.
+services:
+  - name: simple-booking
+    type: web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Отдельного эндпоинта проверки в контракте нет — используем публичный профиль.
+    healthCheckPath: /api/public/owner
+    autoDeployTrigger: commit
