@@ -6,3 +6,9 @@ dist/
 
 # Артефакты Playwright MCP
 .playwright-mcp/
+
+# Отчёты Playwright. В e2e/.gitignore они уже есть, но запуск из корня
+# репозитория складывает их сюда.
+test-results/
+playwright-report/
+blob-report/
