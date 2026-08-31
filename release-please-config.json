@@ -15,8 +15,6 @@
     { "type": "refactor", "section": "Рефакторинг" },
     { "type": "docs", "section": "Документация" },
     { "type": "test", "section": "Тесты" },
-    { "type": "build", "section": "Сборка" },
-    { "type": "ci", "section": "CI", "hidden": true },
-    { "type": "chore", "section": "Прочее", "hidden": true }
+    { "type": "build", "section": "Сборка" }
   ]
 }
