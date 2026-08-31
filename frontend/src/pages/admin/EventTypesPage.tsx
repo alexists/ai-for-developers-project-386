@@ -148,7 +148,13 @@ export function EventTypesPage() {
         {(list) => (
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
             {list.map((eventType) => (
-              <Card key={eventType.id} withBorder padding="lg" radius="md">
+              <Card
+                key={eventType.id}
+                withBorder
+                padding="lg"
+                radius="md"
+                data-testid="event-type-row"
+              >
                 <Stack gap="sm" h="100%" justify="space-between">
                   <Stack gap={6}>
                     <Group justify="space-between" wrap="nowrap" align="flex-start">
