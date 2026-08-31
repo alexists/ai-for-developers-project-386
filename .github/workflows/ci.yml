@@ -156,13 +156,15 @@ jobs:
       - name: Собрать образ
         run: docker build -t simple-booking:ci .
 
-      - name: Проверить, что контейнер отвечает
+      # Платформа деплоя подставляет свой порт через PORT, поэтому проверяем
+      # не значение по умолчанию из Dockerfile, а именно чтение переменной.
+      - name: Проверить, что контейнер отвечает на порту из PORT
         run: |
-          docker run -d --name booking-ci -p 8080:8080 simple-booking:ci
+          docker run -d --name booking-ci -e PORT=10000 -p 10000:10000 simple-booking:ci
           for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:8080/api/public/owner > /dev/null; then
+            if curl -sf http://127.0.0.1:10000/api/public/owner > /dev/null; then
               echo "Приложение отвечает"
-              curl -sf http://127.0.0.1:8080/ > /dev/null && echo "Статика отдаётся"
+              curl -sf http://127.0.0.1:10000/ > /dev/null && echo "Статика отдаётся"
               docker rm -f booking-ci
               exit 0
             fi
