@@ -18,7 +18,8 @@ frontend/     интерфейс: Vite + React + Mantine
 backend/      сервер: Fastify + SQLite
 e2e/          интеграционные сценарии в браузере: Playwright
 Dockerfile    сборка всего приложения в один образ
-domain.md     доменная модель и сценарии
+domain.md     доменная модель и правила календаря
+scenarios.md  пользовательские сценарии для проверки и где они проверяются
 coverage.md   покрытие сценариев задания эндпоинтами
 ```
 
@@ -75,11 +76,12 @@ cd e2e
 npm install
 npx playwright install chromium
 npm run build:app        # собрать бэкенд и фронтенд
-npm test                 # 6 сценариев в настоящем браузере
+npm test                 # 8 сценариев в настоящем браузере
 ```
 
 Сценарии гоняются по собранному приложению — в той же связке, что и в Docker.
-Список проверяемых путей — в [e2e/README.md](e2e/README.md).
+Что проверяется — в [scenarios.md](scenarios.md), как именно — в
+[e2e/README.md](e2e/README.md).
 
 ## Проверки и релизы
 
@@ -89,9 +91,10 @@ npm test                 # 6 сценариев в настоящем брауз
 в браузере и проверка, что Docker-образ поднимается и отвечает.
 
 Коммиты — по [Conventional Commits](https://www.conventionalcommits.org/ru/v1.0.0/),
-формат описан в [CLAUDE.md](CLAUDE.md). По ним
-[release-please](.github/workflows/release-please.yml) держит открытым release-PR
-с changelog и следующей версией; мёрдж этого PR выпускает релиз и ставит тег.
+формат описан в [CLAUDE.md](CLAUDE.md) и проверяется в CI на каждом pull request.
+По ним [release-please](.github/workflows/release-please.yml) держит открытым
+release-PR с changelog и следующей версией; мёрдж этого PR выпускает релиз и
+ставит тег.
 
 ## Статус
 
@@ -101,5 +104,5 @@ npm test                 # 6 сценариев в настоящем брауз
 | Фронтенд | готов: 6 экранов, все операции контракта задействованы |
 | Бэкенд | готов: все 12 эндпоинтов, инварианты I1–I5, 39 тестов |
 | Docker-образ | готов: один образ, Node отдаёт API и статику |
-| Интеграционные тесты | готовы: 6 сценариев Playwright, основной путь бронирования |
+| Интеграционные тесты | готовы: 8 сценариев Playwright поверх зафиксированных в `scenarios.md` |
 | CI и релизы | готовы: GitHub Actions на каждый push, release-please с changelog |
