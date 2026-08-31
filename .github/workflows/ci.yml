@@ -6,6 +6,41 @@ on:
   pull_request:
 
 jobs:
+  commits:
+    name: Формат коммитов
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # По Conventional Commits release-please считает версию и собирает
+      # changelog, поэтому нарушение формата ломает релиз, а не только стиль.
+      # Заголовки на русском, поэтому длина считается в символах: LANG=C.UTF-8.
+      - name: Заголовки коммитов по Conventional Commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LANG: C.UTF-8
+        run: |
+          pattern='^(feat|fix|docs|test|refactor|perf|build|ci|chore)(\([a-z0-9-]+\))?!?: .+$'
+          failed=0
+
+          while IFS= read -r subject; do
+            [ -z "$subject" ] && continue
+
+            if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+              echo "::error::не по Conventional Commits: $subject"
+              failed=1
+            elif [ "${#subject}" -gt 72 ]; then
+              echo "::error::заголовок длиннее 72 символов: $subject"
+              failed=1
+            fi
+          done < <(git log --no-merges --format=%s "$BASE..$HEAD")
+
+          exit $failed
+
   contract:
     name: Контракт
     runs-on: ubuntu-latest
