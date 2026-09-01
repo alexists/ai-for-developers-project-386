@@ -173,3 +173,24 @@ jobs:
           echo "Контейнер не поднялся"
           docker logs booking-ci
           exit 1
+
+  deploy:
+    name: Деплой на Render
+    # Render не получает от GitHub события о новых коммитах, поэтому сборку
+    # запускаем сами. Только с main и только после зелёных проверок: на прод не
+    # должен уезжать коммит, который не собрался или провалил сценарии.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [contract, backend, frontend, e2e, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Запустить сборку сервиса
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::секрет RENDER_DEPLOY_HOOK_URL не задан"
+            exit 1
+          fi
+
+          curl -sf -X POST "$HOOK" > /dev/null
+          echo "Сборка запущена, статус — в дашборде Render"
