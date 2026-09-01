@@ -44,6 +44,8 @@ export function SlotPanel({ daySlots, selectedStart, onSelect }: Props) {
                 onClick={() => isFree && onSelect(slot)}
                 data-testid="slot"
                 data-status={slot.status}
+                // Момент в UTC: по нему сценарии находят слот, не разбирая подпись.
+                data-start={slot.start}
                 style={(theme) => ({
                   padding: '8px 4px',
                   borderRadius: theme.radius.sm,
