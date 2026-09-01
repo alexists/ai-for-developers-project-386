@@ -109,3 +109,37 @@ test('форма не отправляет некорректные данные
   await expect(page.getByText('Укажите корректный email')).toBeVisible();
   await expect(page).not.toHaveURL(/\/bookings\//);
 });
+
+test('слот, занятый во время заполнения формы, не бронируется', async ({ page, request }) => {
+  await page.goto('/book/consultation');
+  await selectDay(page, 8);
+
+  const slot = freeSlots(page).first();
+  const start = await slot.getAttribute('data-start');
+  const time = ((await slot.textContent()) ?? '').trim();
+  await slot.click();
+
+  // Пока гость заполняет форму, это же время занимает кто-то другой.
+  // Из браузера гонку не воспроизвести, поэтому вторую бронь создаём запросом.
+  const rival = await request.post('/api/public/bookings', {
+    data: {
+      eventTypeId: 'consultation',
+      start,
+      guest: { name: 'Ольга Никитина', email: 'olga@example.com' },
+    },
+  });
+  expect(rival.status()).toBe(201);
+
+  await submitGuestForm(page, { name: 'Игорь Лебедев', email: 'igor@example.com' });
+
+  // Бронь не создана, и гостю объяснено, что произошло.
+  await expect(page.getByText('Это время уже заняли')).toBeVisible();
+  await expect(page.getByText('Выберите другое время.')).toBeVisible();
+  await expect(page).not.toHaveURL(/\/bookings\//);
+
+  // Сетка перезапрошена: то же время показано занятым.
+  await expect(page.locator('[data-testid="slot"]', { hasText: time })).toHaveAttribute(
+    'data-status',
+    'busy',
+  );
+});
