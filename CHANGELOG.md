@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.1](https://github.com/alexists/ai-for-developers-project-386/compare/v1.1.0...v1.1.1) (2026-09-01)
+
+
+### Тесты
+
+* **e2e:** покрыть конфликт при занятом слоте в браузере ([ff186b2](https://github.com/alexists/ai-for-developers-project-386/commit/ff186b223fa1f6d0348cf6cfb3cef0af809c03b1))
+
+
+### CI
+
+* выкладывать на Render из CI после зелёных проверок ([fcb0b43](https://github.com/alexists/ai-for-developers-project-386/commit/fcb0b436896fc15539ff17346b509a2003de4f53))
+
+
+### Прочее
+
+* игнорировать отчёты Playwright в корне репозитория ([6e1af19](https://github.com/alexists/ai-for-developers-project-386/commit/6e1af194cf730e6b24d0efe999f0197a7ea7a6b2))
+
 ## [1.1.0](https://github.com/alexists/ai-for-developers-project-386/compare/v1.0.0...v1.1.0) (2026-08-31)
 
 
